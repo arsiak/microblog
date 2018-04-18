@@ -5,8 +5,9 @@ from datetime import datetime
 
 from app import app
 from app import db
-from app.forms import LoginForm, RegistrationForm, EditProfilForm, PostForm
+from app.forms import LoginForm, RegistrationForm, EditProfilForm, PostForm, ResetPasswordRequestForm
 from app.models import User, Post
+from app.email import send_password_reset_email
 
 @app.route('/', methods=['GET','POST'])
 @app.route('/index', methods=['GET','POST'])
@@ -133,6 +134,21 @@ def explore():
     next_url = url_for('explore', page=posts.next_num) if posts.has_next else None
     prev_url = url_for('explore', page=posts.prev_num) if posts.has_prev else None
     return render_template('index.html', title="Explore", posts=posts.items, next_url=next_url, prev_url=prev_url)
+
+
+
+@app.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            send_password_reset_email(user)
+        flash('Check your email for the instructions to reset your password')
+        return redirect(url_for('login'))
+    return render_template('reset_password_request.html', title="reset password", form=form)
 
 
 
